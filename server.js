@@ -1,6 +1,6 @@
 const express = require('express');
 const config = require('./config');
-
+const mongoose = require('mongoose');
 const app = express()
 const port = 3000
 
@@ -63,4 +63,5 @@ app.get('/verify', (req, res) => {
 
 // listen to the server at 3000 port
 app.listen(port, () => {
-    console.log(`Server is running at ${port}`)
+    console.log(`Server is running at ${port}`)
+})
