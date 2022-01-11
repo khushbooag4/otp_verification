@@ -1,60 +1,70 @@
 const express = require('express');
-const config = require('./config');
+require('dotenv').config()
 const mongoose = require('mongoose');
 const app = express()
 const port = 3000
 
-const client = require('twilio')(config.accountSID,config.authToken)
+const client = require('twilio')(process.env.ACCOUNT_SID,process.env.AUTH_TOKEN)
 
 app.get('/', (req, res)=>{
     res.status(200).send("Hello World")
 })
 
+//BodyParser to enable req.body
+app.use(express.json());
+app.use(express.urlencoded({extended: false}))
+
 // Login Endpoint
-app.get('/auth', (req,res) => {
-     if (req.query.mobilenumber) {
-        client
-        .verify
-        .services(config.serviceID)
-        .verifications
-        .create({
-            to: `+${req.query.mobilenumber}`,
-            channel: req.query.channel
-        })
-        .then( (data,err) => {
-            console.log(data);
-            if(err){
-                console.error(err);
-            }else{
-                res.send(200).send(data);
-            }
-        })
-     } else {
-        res.status(400).send({
-            message: "Wrong phone number" })
-     }
+app.post('/auth', (req,res) => {
+    console.log(req.body);
+    const { mobilenumber,channel } = req.body;
+    
+    try {
+        if(
+            typeof mobilenumber === 'number' &&
+            typeof channel === 'string' ){ console.log("Intial Check done") }
+            client
+              .verify
+              .services(process.env.SERVICE_ID)
+              .verifications
+              .create({
+                  to : `+${mobilenumber}`,
+                  channel : channel
+              })
+              .then((data,err) => {
+                console.log(data);
+                if(err){
+                    console.error(err);
+                }else{
+                    res.send(200).send(data);
+                }
+              })
+    } catch (error) {
+        console.error(error);
+    }
+
 })
 
 // Verify Endpoint
-app.get('/verify', (req, res) => {
-    if (req.query.mobilenumber && (req.query.code).length === 6) {
+app.post('/verify', (req, res) => {
+    const { mobilenumber , code } = req.body;
+    console.log(req.body);
+    try {
+        if (mobilenumber && (code).length === 6) {
+            console.log("Intial Check done")
+        }
         client
             .verify
-            .services(config.serviceID)
+            .services(process.env.SERVICE_ID)
             .verificationChecks
             .create({
-                to: `+${req.query.mobilenumber}`,
-                code: req.query.code
+                to: `+${mobilenumber}`,
+                code: code
             })
             .then(data => {
-                if (data.status === "approved") {
-                    res.status(200).send({
-                        message: "User is Verified!!",
-                        data
-                    })
-                }
+                res.status(200).send("User Verfied")
             })
-    } else {
+    } catch (error) {
         res.status(400).send({
             message: "Wrong phone number or code"
         })
